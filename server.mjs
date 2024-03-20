@@ -57,14 +57,27 @@ app.get('/courses', async (req, res) => {
         const courses = await response.json();
 
         const condition = new Condition('課程英文名稱', 'Programming', true);
+        const filteredCourses = courses.filter(course => condition.check(course));
 
-        const filteredCourses = courses.filter(course => {
-            const result = condition.check(course);
-            return result;
-        });
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const startIndex = (page - 1) * limit;
+        const endIndex = page * limit;
 
-        console.log(`Filtered down to ${filteredCourses.length} courses.`);
-        res.json(filteredCourses);
+        const paginatedCourses = filteredCourses.slice(startIndex, endIndex);
+
+        const pagination = {
+            currentPage: page,
+            limit: limit,
+            totalPages: Math.ceil(filteredCourses.length / limit),
+            totalCourses: filteredCourses.length,
+            showing: paginatedCourses.length,
+            startIndex,
+            endIndex: endIndex > filteredCourses.length ? filteredCourses.length : endIndex,
+        };
+
+        console.log(`Filtered and paginated to ${paginatedCourses.length} courses.`);
+        res.json({ pagination, courses: paginatedCourses });
     } catch (error) {
         console.error('Failed to fetch course data:', error);
         res.status(500).json({ message: 'Failed to fetch course data' });
