@@ -62,13 +62,21 @@ app.get('/courses', async (req, res) => {
         const response = await fetch(COURSE_DATA_URL);
         const courses = await response.json();
 
-        const condition = new Condition('課程英文名稱', 'Programming', true);
-        const filteredCourses = courses.filter(course => condition.check(course));
+        // Assuming conditions are passed as a query parameter named 'conditions'
+        const conditionsParam = req.query.conditions;
+        let conditions = [];
+        if (conditionsParam) {
+            conditions = JSON.parse(conditionsParam).map(cond => new Condition(cond.row_field, cond.matcher, cond.regex_match));
+        }
+
+        const filteredCourses = courses.filter(course => conditions.every(condition => condition.check(course)));
+        // const filteredCourses = courses.filter(course => condition.check(course));
 
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
         const startIndex = (page - 1) * limit;
         const endIndex = page * limit;
+
 
         const paginatedCourses = filteredCourses.slice(startIndex, endIndex);
 
